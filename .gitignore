@@ -1,0 +1,21 @@
+# Environment
+.env
+*.env.local
+
+# Go
+bin/
+
+# Database backups (produced by scripts/backup.sh)
+backups/
+
+# Node / Frontend
+web/node_modules/
+web/dist/
+!web/dist/index.html
+
+# IDE
+.idea/
+.vscode/
+*.swp
+# Binary
+/server

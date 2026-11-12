@@ -1,0 +1,106 @@
+# Container logs: Docker's default json-file driver never trims, and the app
+# logs every request — cap each container at 3 x 10 MB.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  ollama:
+    image: ollama/ollama:0.40.16
+    volumes:
+      - ollama_data:/root/.ollama
+    # Not exposed externally — only the app container calls it.
+    # Starts Ollama, waits for it to be ready, then pulls the model.
+    # On subsequent starts the model is already cached in the volume so the
+    # pull is near-instant. After pulling, sends a warmup request so the
+    # model is already loaded in memory when the first user request arrives.
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama serve & until ollama list > /dev/null 2>&1; do sleep 1; done && ollama pull $${OLLAMA_MODEL} && (ollama run $${OLLAMA_MODEL} hi > /dev/null 2>&1 || true) && wait"]
+    environment:
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:0.6b}
+      # Must match ollamaNumCtx in internal/services/ollama_provider.go so the
+      # warm-up loads the model the same way the app uses it (no reloads).
+      OLLAMA_CONTEXT_LENGTH: "8192"
+      # Keep the model loaded in memory indefinitely — prevents the 7-8s
+      # reload penalty that occurs after the default 5-minute idle timeout.
+      OLLAMA_KEEP_ALIVE: -1
+      # One model and one request at a time: each extra model or parallel slot
+      # costs gigabytes of RAM on a 16 GB laptop.
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_NUM_PARALLEL: "1"
+      # Smaller attention cache (about half the memory) with no real quality loss.
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: q8_0
+    # Leave CPU headroom for the host and cap memory so a runaway model gets
+    # killed instead of pushing the machine into swap.
+    cpus: "4"
+    mem_limit: 6g
+    logging: *logging
+    healthcheck:
+      # Passes once the model actually appears in `ollama list`
+      test: ["CMD-SHELL", "ollama list 2>/dev/null | grep -qF \"$${OLLAMA_MODEL}\""]
+      interval: 60s
+      start_interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
+    restart: unless-stopped
+
+  db:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_USER: myfi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (openssl rand -hex 32)}
+      POSTGRES_DB: myfi
+    volumes:
+      # Postgres 18+ keeps its data in a versioned subdirectory of this path.
+      - pgdata:/var/lib/postgresql
+    # Localhost only: never publish Postgres on the network interfaces.
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myfi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # Come back after a crash, Docker restart, or reboot.
+    restart: unless-stopped
+    logging: *logging
+
+  app:
+    build:
+      context: .
+      #pull_policy: if_not_present
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    # Localhost only: put a reverse proxy or tunnel with HTTPS in front to
+    # reach it from other devices.
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      DATABASE_URL: postgres://myfi:${POSTGRES_PASSWORD}@db:5432/myfi?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (openssl rand -hex 32)}
+      PORT: "8080"
+      ENV: production
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:0.6b}
+      # Match the ollama service's 4-CPU limit.
+      OLLAMA_NUM_THREAD: "4"
+      SECURE_COOKIES: ${SECURE_COOKIES:-false}
+      MYFI_ENCRYPTION_KEY: ${MYFI_ENCRYPTION_KEY:-}
+      PLAID_CLIENT_ID: ${PLAID_CLIENT_ID:-}
+      PLAID_SECRET: ${PLAID_SECRET:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
+
+volumes:
+  pgdata:
+  ollama_data:

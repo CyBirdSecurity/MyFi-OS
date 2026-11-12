@@ -1,0 +1,7 @@
+.git
+web/node_modules
+web/dist
+bin
+# Secrets and database dumps must never enter the build context.
+.env
+backups
