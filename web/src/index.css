@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ── Geist Sans — self-hosted from /public/fonts/geist-sans (SIL Open
+     Font License, see OFL.txt there). One face for the whole product,
+     including numbers. ── */
+  @font-face {
+    font-family: 'Geist';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/geist-sans/Geist-Regular.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Geist';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/geist-sans/Geist-Medium.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Geist';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/geist-sans/Geist-SemiBold.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'Geist';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/geist-sans/Geist-Bold.woff2') format('woff2');
+  }
+
+  /* ── Light mode — default (no class on <html>) ──
+     Warm neutral base + single "Ink" accent hue */
+  :root {
+    --bg-canvas:       251 251 250;   /* warm bone   #FBFBFA */
+    --bg-surface:      255 255 255;   /* white       #FFFFFF */
+    --bg-subtle:       245 244 241;   /* warm off-wh #F5F4F1 */
+    --bg-muted:        236 235 231;   /* warm gray   #ECEBE7 */
+    --bg-overlay:      rgba(30, 26, 20, 0.35);  /* warm-tinted, not neutral black */
+
+    --border-default:  234 234 234;   /* #EAEAEA */
+    --border-subtle:   242 241 238;   /* #F2F1EE */
+    --border-strong:   216 214 208;   /* #D8D6D0 */
+
+    --text-primary:    23 20 15;      /* warm charcoal #17140F — never pure black */
+    --text-secondary:  91 86 77;      /* #5B564D */
+    --text-tertiary:   138 133 121;   /* #8A8579 */
+    --text-muted:      180 175 163;   /* #B4AFA3 */
+
+    --accent:          31 108 159;    /* Ink #1F6C9F */
+    --accent-hover:    23 81 119;     /* Ink, one step darker */
+    --accent-text:     31 108 159;    /* Ink #1F6C9F */
+    --accent-tint-bg:       #E1F3FE;  /* pale-blue spot pastel */
+    --accent-tint-border:   #B8E0F7;
+    --accent-focus-ring:    31 108 159;
+
+    --positive:        52 101 56;     /* #346538 */
+    --positive-tint-bg:     #EDF3EC;
+    --negative:        159 47 45;     /* #9F2F2D */
+    --negative-tint-bg:     #FDEBEC;
+    --warning:         149 100 0;     /* #956400 */
+    --warning-tint-bg:      #FBF3DB;
+
+    /* Ink-stamp primary button fill — same value as --text-primary by
+       design (the "stamp" is just text-primary ink), with a distinct
+       one-step-darker hover shade. */
+    --ink-hover:       51 46 36;       /* #332E24 */
+
+    color-scheme: light;
+  }
+
+  /* ── Dark mode — when <html class="dark"> ──
+     Same warm family, inverted — never pure black, same accent hue as light. */
+  .dark {
+    --bg-canvas:       20 18 15;      /* warm near-black #14120F */
+    --bg-surface:      28 26 22;      /* #1C1A16 */
+    --bg-subtle:       38 35 25;      /* #262319 */
+    --bg-muted:        56 52 42;      /* #38342A */
+    --bg-overlay:      rgba(0, 0, 0, 0.65);
+
+    --border-default:  51 47 38;      /* #332F26 */
+    --border-subtle:   38 35 25;      /* #262319 */
+    --border-strong:   74 68 50;      /* #4A4432 */
+
+    --text-primary:    245 243 238;   /* warm off-white #F5F3EE — never pure white */
+    --text-secondary:  163 156 142;   /* #A39C8E */
+    --text-tertiary:   122 116 102;   /* #7A7466 */
+    --text-muted:      85 80 63;      /* #55503F */
+
+    --accent:          111 168 217;   /* Ink (lighter tint) #6FA8D9 */
+    --accent-hover:    141 190 227;   /* Ink, one step lighter */
+    --accent-text:     111 168 217;   /* #6FA8D9 */
+    --accent-tint-bg:       rgba(31, 108, 159, 0.16);
+    --accent-tint-border:   rgba(31, 108, 159, 0.32);
+    --accent-focus-ring:    111 168 217;
+
+    --positive:        111 203 134;   /* #6FCB86 */
+    --positive-tint-bg:     rgba(52, 101, 56, 0.22);
+    --negative:        240 129 126;   /* #F0817E */
+    --negative-tint-bg:     rgba(159, 47, 45, 0.22);
+    --warning:         240 178 61;    /* #F0B23D */
+    --warning-tint-bg:      rgba(149, 100, 0, 0.22);
+
+    /* Ink-stamp primary button fill — one step lighter on hover (inverted
+       direction from light mode, since the fill itself is near-white here). */
+    --ink-hover:       228 225 216;    /* #E4E1D8 */
+
+    color-scheme: dark;
+  }
+
+  html {
+    @apply bg-canvas text-text-primary font-sans;
+    /* Every digit in the app renders tabular (fixed-width), in Geist Sans.
+       Applied globally rather than per call-site: 223+ numeric render
+       sites across the app made a manual per-element pass impractical,
+       and tabular-nums has no visual effect on non-digit text, so a
+       blanket rule is both simpler and safer than trying to catch
+       every formatCurrency/formatPercent/toFixed call individually. */
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Home-screen web app on iPhone: the status bar is translucent
+     (black-translucent) and the page draws underneath it. Keep content
+     below it and behind a solid strip so it never shows through blurred;
+     in landscape, also keep content clear of the notch / Dynamic Island.
+     All insets are 0 in a normal browser tab. */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top);
+    background: rgb(var(--bg-canvas));
+    z-index: 45;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-subtle; }
+  ::-webkit-scrollbar-thumb { @apply bg-muted rounded; }
+}
